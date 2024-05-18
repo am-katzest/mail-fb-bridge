@@ -4,6 +4,6 @@
 
 
 (defn post! [{:keys [token page-id]} msg]
-  (auth/with-facebook-auth token
+  (auth/with-facebook-auth {:access-token token}
     (client/post [page-id :feed]
                  {:form-params msg})))
