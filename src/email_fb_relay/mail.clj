@@ -9,8 +9,8 @@
         folder (open-folder gstore "inbox" :readonly)
         im (events/new-idle-manager s)]
     (events/add-message-count-listener (fn [e]
-                                         (doseq [m (:messages e)]
-                                           (f m)))
+                                         (future (doseq [m (:messages e)]
+                                                   (f (read-message m)))))
                                        (constantly nil)
                                        folder
                                        im)
