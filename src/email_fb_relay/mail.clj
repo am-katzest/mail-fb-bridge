@@ -15,3 +15,8 @@
         callback (fn [e] (future (doseq [m (:messages e)] (f (read-message m)))))]
     (events/add-message-count-listener callback (constantly nil) folder im)
     #(events/stop im)))
+
+(defn grab-some-mail [conf n]
+  (let [[_ store] (make-session conf)
+        inbox-messages (inbox store)]
+    (mapv read-message (take n inbox-messages))))
