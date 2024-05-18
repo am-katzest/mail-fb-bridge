@@ -25,10 +25,11 @@
        :caption "more details at source"})))
 
 (defn handle-msg [conf msg]
-  (when (and (PA? msg) (initial? msg))
+  (if (and (PA? msg) (initial? msg))
     (let [out (transformPA msg)]
-      (log/infof "posting %s" out)
-      (fb/post! (:facebook conf) out))))
+      (log/infof "posting %s (orginally %s)" out msg)
+      (fb/post! (:facebook conf) out))
+    (log/infof "ignoring %s" msg)))
 
 (defn -main [cfg & _]
   (log/info "starting...")
