@@ -26,9 +26,9 @@
 (defn handle-msg [conf msg]
   (if (and (PA? msg) (initial? msg))
     (let [out (transformPA msg)]
-      (log/infof "posting %s (orginally %s)" out msg)
+      (log/infof "posting %s (%s)" out (:subject msg))
       (fb/post! (:facebook conf) out))
-    (log/infof "ignoring %s" msg)))
+    (log/infof "ignoring %s" (:subject msg))))
 
 (defn -main [& args]
   (log/info "starting...")
