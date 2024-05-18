@@ -1,5 +1,5 @@
 {:email
- {:type :gmail
+ {:server "imap.gmail.com"
   :email "meow@gmail.com"
   :password "mraw"}
  :facebook
