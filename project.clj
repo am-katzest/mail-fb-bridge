@@ -6,6 +6,8 @@
                  [io.forward/clojure-mail "1.0.8"]
                  [clj-facebook-graph "0.4.0"]
                  [org.clojure/tools.logging "1.3.0"]
-                  [org.clojure/core.async "1.6.681"]
+                 [org.clojure/core.async "1.6.681"]
                  [aero "1.1.6"]]
+  :uberjar-name "relay.jar"
+  :main email-fb-relay.core
   :repl-options {:init-ns email-fb-relay.core})
