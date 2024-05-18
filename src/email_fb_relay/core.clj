@@ -12,8 +12,6 @@
 (defn initial? [msg]
   (->> msg :subject (re-matches #".*: INITIAL$")))
 
-(def config (aero/read-config "config.edn"))
-
 (defn transformPA [msg]
   (let [body (-> msg :body :body)
         content (str/trim (first (str/split-lines body)))]
