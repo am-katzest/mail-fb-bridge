@@ -1,0 +1,7 @@
+{:email
+ {:type :gmail
+  :email "meow@gmail.com"
+  :password "mraw"}
+ :facebook
+ {:token "mewewewewe"
+  :page-id 53135135135}}
