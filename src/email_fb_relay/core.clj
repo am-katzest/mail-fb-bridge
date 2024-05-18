@@ -1,4 +1,5 @@
 (ns email-fb-relay.core
+  (:gen-class)
   (:require [email-fb-relay.fb :as fb]
             [email-fb-relay.mail :as mail]
             [clojure.string :as str]
@@ -31,9 +32,9 @@
       (fb/post! (:facebook conf) out))
     (log/infof "ignoring %s" msg)))
 
-(defn -main [cfg & _]
+(defn -main [& args]
   (log/info "starting...")
-  (let [conf (aero/read-config (or cfg "config.edn"))
+  (let [conf (aero/read-config (or (first args) "config.edn"))
         chan (a/chan (a/sliding-buffer 10))]
     (log/info "read config...")
     (mail/start-manager (:email conf) #(a/>!! chan %))
