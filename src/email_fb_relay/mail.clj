@@ -16,33 +16,29 @@
         callback (fn [e]
                    (log/infof "received mail! (%d)" (count (:messages e)))
                    (future (doseq [m (:messages e)]
-                             (f (read-message m))))
-                   (.watch im folder))]
-    (events/add-message-count-listener callback #(.watch im folder) folder im)
+                             (f (read-message m)))))]
+    (events/add-message-count-listener callback (constantly nil) folder im)
     im))
 
-(defn- wait-until-im-stops-running [im killed]
-  (loop []
-    (let [killed? (deref killed 10000 nil)] ; wait 10s or until killed is delivered
-         (cond
-           killed? (log/info "im stopped")
-           (.isRunning im) (recur)
-           :else   (log/error "idle manager is not running")))))
+(defn- kill-im-if-it-fails [im kill-request]
+  (future
+    (loop []
+      (Thread/sleep 10000)
+      (when (not (realized? kill-request))
+        (when-not (.isRunning im)
+          (log/error "idle manager is not running, requesting restart")
+          (deliver kill-request true))
+        (recur)))))
 
-(defn- kill-client-before-server-decides-its-dead [im killed]
+(defn- kill-client-before-server-decides-its-dead [im kill-request]
   (future (Thread/sleep (* 60 20 1000))
-          (log/info "killing im")
-          (deliver killed true) ; notify wait-until-im-stops-running
-          (events/stop im)))
+          (log/info "requesting im restart because 20 minutes passed")
+          (deliver kill-request true)))
 
 (defn- try-starting-manager-until-it-works [conf f]
   (log/info "trying to start a new im")
   (loop [time 100]
-    (or (try (let [im (start-manager conf f)
-                   killed (promise)]
-               (log/info "started new im successfully")
-               (kill-client-before-server-decides-its-dead im killed)
-               [im killed])
+    (or (try (start-manager conf f)
              (catch Throwable t
                (log/error t "failed to start new im")))
         (do
@@ -50,10 +46,18 @@
           (recur (min 600000 (* time 2)))))))
 
 (defn start-persistant-manager [conf f]
-  (future (loop []
-     (let [[im killed] (try-starting-manager-until-it-works conf f)]
-       (wait-until-im-stops-running im killed)
-       (recur)))))
+  (future
+    (loop []
+      (let [kill-request (promise)
+            f' (fn [m] (f m) (deliver kill-request true))
+            im (try-starting-manager-until-it-works conf f')]
+        (log/info "started new im successfully")
+        (kill-client-before-server-decides-its-dead im kill-request)
+        (kill-im-if-it-fails im kill-request)
+        (deref kill-request)
+        (events/stop im)
+        (log/info "killed im")
+        (recur)))))
 
 (defn grab-some-mail [conf n]
   (let [[_ store] (make-session conf)
