@@ -21,18 +21,26 @@
     (events/add-message-count-listener callback #(.watch im folder) folder im)
     im))
 
-(defn- wait-until-im-stops-running [im]
+(defn- wait-until-im-stops-running [im killed]
   (loop []
-        (Thread/sleep 10000)
+        (deref killed 10000 nil) ; wait 10s or until killed is delivered
         (if (.isRunning im) (recur)
             (log/error "idle manager is not running"))))
+
+(defn- kill-client-before-server-decides-its-dead [im killed]
+  (future (Thread/sleep (* 60 20 1000))
+          (log/info "killing im")
+          (deliver killed nil) ; notify wait-until-im-stops-running
+          (events/stop im)))
 
 (defn- try-starting-manager-until-it-works [conf f]
   (log/info "trying to start a new im")
   (loop [time 100]
-    (or (try (let [im (start-manager conf f)]
+    (or (try (let [im (start-manager conf f)
+                   killed (promise)]
                (log/info "started new im successfully")
-               im)
+               (kill-client-before-server-decides-its-dead im killed)
+               [im killed])
              (catch Throwable t
                (log/error t "failed to start new im")))
         (do
@@ -41,8 +49,8 @@
 
 (defn start-persistant-manager [conf f]
   (loop []
-    (let [im (try-starting-manager-until-it-works conf f)]
-      (wait-until-im-stops-running im)
+    (let [[im killed] (try-starting-manager-until-it-works conf f)]
+      (wait-until-im-stops-running im killed)
       (recur))))
 
 (defn grab-some-mail [conf n]
