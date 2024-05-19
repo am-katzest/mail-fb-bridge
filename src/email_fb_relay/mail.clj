@@ -33,11 +33,11 @@
 (defn- request-client-to-be-killed-in-20-minutes [kill-request]
   (future (Thread/sleep (* 60 20 1000))
           (when-not (realized? kill-request)
-            (log/info "requesting im restart because 20 minutes passed")
+            (log/debug "requesting im restart because 20 minutes passed")
             (deliver kill-request true))))
 
 (defn- try-starting-manager-until-it-works [conf f]
-  (log/info "trying to start a new im")
+  (log/debug "trying to start a new im")
   (loop [time 100]
     (or (try (start-manager conf f)
              (catch Throwable t
@@ -52,13 +52,13 @@
       (let [kill-request (promise)
             f' (fn [m] (f m) (deliver kill-request true))
             im (try-starting-manager-until-it-works conf f')]
-        (log/info "started new im successfully")
+        (log/debug "started new im successfully")
         ; whichever happens first
         (request-client-to-be-killed-in-20-minutes kill-request)
         (watch-im-for-faliure im kill-request)
         (deref kill-request)
         (events/stop im)
-        (log/info "killed im")
+        (log/debug "killed im")
         (recur)))))
 
 (defn grab-some-mail [conf n]

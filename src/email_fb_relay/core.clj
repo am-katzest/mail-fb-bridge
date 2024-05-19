@@ -28,7 +28,7 @@
     (let [out (transformPA msg)]
       (log/infof "posting %s (%s)" out (:subject msg))
       (fb/post! (:facebook conf) out))
-    (log/infof "ignoring %s" (:subject msg))))
+    (log/debugf "ignoring %s" (:subject msg))))
 
 (defn -main [& args]
   (log/info "starting...")
@@ -39,7 +39,7 @@
     (log/info "started listening...")
     (loop []
       (let [msg (a/<!! chan)]
-        (log/infof "processing msg: %s" (:subject msg))
+        (log/debugf "processing msg: %s" (:subject msg))
         (try (handle-msg conf msg)
              (catch Throwable e
                (log/errorf e "invalid msg: %s" (str msg)))))
