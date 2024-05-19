@@ -20,20 +20,21 @@
     (events/add-message-count-listener callback (constantly nil) folder im)
     im))
 
-(defn- kill-im-if-it-fails [im kill-request]
+(defn- watch-im-for-faliure [im kill-request]
   (future
     (loop []
       (Thread/sleep 10000)
-      (when (not (realized? kill-request))
+      (when-not (realized? kill-request)
         (when-not (.isRunning im)
           (log/error "idle manager is not running, requesting restart")
           (deliver kill-request true))
         (recur)))))
 
-(defn- kill-client-before-server-decides-its-dead [im kill-request]
+(defn- request-client-to-be-killed-in-20-minutes [kill-request]
   (future (Thread/sleep (* 60 20 1000))
-          (log/info "requesting im restart because 20 minutes passed")
-          (deliver kill-request true)))
+          (when-not (realized? kill-request)
+            (log/info "requesting im restart because 20 minutes passed")
+            (deliver kill-request true))))
 
 (defn- try-starting-manager-until-it-works [conf f]
   (log/info "trying to start a new im")
@@ -52,8 +53,9 @@
             f' (fn [m] (f m) (deliver kill-request true))
             im (try-starting-manager-until-it-works conf f')]
         (log/info "started new im successfully")
-        (kill-client-before-server-decides-its-dead im kill-request)
-        (kill-im-if-it-fails im kill-request)
+        ; whichever happens first
+        (request-client-to-be-killed-in-20-minutes kill-request)
+        (watch-im-for-faliure im kill-request)
         (deref kill-request)
         (events/stop im)
         (log/info "killed im")
