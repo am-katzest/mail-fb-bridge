@@ -12,8 +12,10 @@
   (let [[s gstore] (make-session conf)
         folder (open-folder gstore "inbox" :readonly)
         im (events/new-idle-manager s)
-        callback (fn [e] (future (doseq [m (:messages e)] (f (read-message m)))))]
-    (events/add-message-count-listener callback (constantly nil) folder im)
+        callback (fn [e] (future (doseq [m (:messages e)]
+                                  (f (read-message m))))
+                   (.watch im folder))]
+    (events/add-message-count-listener callback #(.watch im folder) folder im)
     #(events/stop im)))
 
 (defn grab-some-mail [conf n]
