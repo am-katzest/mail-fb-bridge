@@ -23,14 +23,16 @@
 
 (defn- wait-until-im-stops-running [im killed]
   (loop []
-        (deref killed 10000 nil) ; wait 10s or until killed is delivered
-        (if (.isRunning im) (recur)
-            (log/error "idle manager is not running"))))
+    (let [killed? (deref killed 10000 nil)] ; wait 10s or until killed is delivered
+         (cond
+           killed? (log/info "im stopped")
+           (.isRunning im) (recur)
+           :else   (log/error "idle manager is not running")))))
 
 (defn- kill-client-before-server-decides-its-dead [im killed]
   (future (Thread/sleep (* 60 20 1000))
           (log/info "killing im")
-          (deliver killed nil) ; notify wait-until-im-stops-running
+          (deliver killed true) ; notify wait-until-im-stops-running
           (events/stop im)))
 
 (defn- try-starting-manager-until-it-works [conf f]
