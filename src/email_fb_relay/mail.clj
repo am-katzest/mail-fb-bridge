@@ -50,10 +50,10 @@
           (recur (min 600000 (* time 2)))))))
 
 (defn start-persistant-manager [conf f]
-  (loop []
-    (let [[im killed] (try-starting-manager-until-it-works conf f)]
-      (wait-until-im-stops-running im killed)
-      (recur))))
+  (future (loop []
+     (let [[im killed] (try-starting-manager-until-it-works conf f)]
+       (wait-until-im-stops-running im killed)
+       (recur)))))
 
 (defn grab-some-mail [conf n]
   (let [[_ store] (make-session conf)
