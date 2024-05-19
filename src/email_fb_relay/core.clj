@@ -35,7 +35,7 @@
   (let [conf (aero/read-config (or (first args) "config.edn"))
         chan (a/chan (a/sliding-buffer 10))]
     (log/info "read config...")
-    (mail/start-manager (:email conf) #(a/>!! chan %))
+    (mail/start-persistant-manager (:email conf) #(a/>!! chan %))
     (log/info "started listening...")
     (loop []
       (when-let [msg (a/<!! chan)]
