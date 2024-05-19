@@ -24,7 +24,7 @@
        :caption "more details at source"})))
 
 (defn handle-msg [conf msg]
-  (if (and (PA? msg) (initial? msg))
+  (if (and (some? msg) (PA? msg) (initial? msg))
     (let [out (transformPA msg)]
       (log/infof "posting %s (%s)" out (:subject msg))
       (fb/post! (:facebook conf) out))
@@ -38,8 +38,10 @@
     (mail/start-persistant-manager (:email conf) #(a/>!! chan %))
     (log/info "started listening...")
     (loop []
-      (when-let [msg (a/<!! chan)]
+      (let [msg (a/<!! chan)]
+        (log/infof "processing msg: %s" (:subject msg))
         (try (handle-msg conf msg)
-          (catch Throwable e
-            (log/errorf e "invalid msg: %s" (str msg)))))
-      (recur))))
+             (catch Throwable e
+               (log/errorf e "invalid msg: %s" (str msg)))))
+      (recur))
+    (log/error "main loop stopped, this shouldn't happen")))
