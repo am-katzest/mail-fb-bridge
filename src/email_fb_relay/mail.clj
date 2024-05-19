@@ -30,15 +30,14 @@
 (defn- try-starting-manager-until-it-works [conf f]
   (log/info "trying to start a new im")
   (loop [time 100]
-    (let [im (try (let [im (start-manager conf f)]
-                    (log/info "started new im successfully")
-                    im)
-                  (catch Throwable t
-                    (log/error t "failed to start new im")))]
-      (or im
-          (do
-            (Thread/sleep time)
-            (recur (min 600000 (* time 2))))))))
+    (or (try (let [im (start-manager conf f)]
+               (log/info "started new im successfully")
+               im)
+             (catch Throwable t
+               (log/error t "failed to start new im")))
+        (do
+          (Thread/sleep time)
+          (recur (min 600000 (* time 2)))))))
 
 (defn start-persistant-manager [conf f]
   (loop []
