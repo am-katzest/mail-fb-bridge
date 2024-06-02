@@ -12,10 +12,23 @@
 (defn initial? [msg]
   (->> msg :subject (re-matches #".*: INITIAL$")))
 
+(defn remove-unsubscribe-lines [lines]
+  (let [[f e d c b a & rest] (reverse lines)]
+    (assert (= "" a) a)
+    (assert (= "To unsubscribe, click the following link:" b) b)
+    (assert (re-matches #"https.*"  c) c)
+    (assert (= "" d) d)
+    (assert (= "To pause all notifications, click the following link:" e) e)
+    (assert (re-matches #"https.*"  f) f)
+    (reverse rest)))
+
 (defn transformPA [msg]
-  (let [body (-> msg :body :body)
-        content (str/trim (first (str/split-lines body)))]
-    (assert (= 7 (count (str/split-lines body))) "wrong line count")
+  (let [content (->> msg :body :body
+                     str/split-lines
+                     remove-unsubscribe-lines
+                     (remove #{""})
+                     (str/join  " ")
+                     str/trim)]
     (assert (= 1 (count (re-seq #"https" content))))
     (let [[[_ message url]] (re-seq #"^(.*) +Visit +(https://511PA\.com.*)$" content)]
       (assert (and (some? message) (some? url)) "can't split into body & url")
