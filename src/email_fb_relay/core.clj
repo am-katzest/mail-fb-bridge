@@ -12,7 +12,7 @@
   (log/debug "debug enabled")
   (log/info "starting...")
   (let [conf (aero/read-config (or (first args) "config.edn"))
-        chan (a/chan (a/sliding-buffer 10) (keep transform/handle-msg))]
+        chan (a/chan (a/sliding-buffer 10) (mapcat transform/handle-msg))]
     (log/info "read config...")
     (mail/start-persistant-manager (:email conf) #(a/>!! chan %))
     (log/info "started listening...")
